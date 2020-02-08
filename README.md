@@ -51,9 +51,9 @@ Start time of the day for the net event.
 
 ## RATE - Interval / Duration
 ### Interval
-Beacon interval while net is active.
+Beacon interval while net is active in minutes.
 ### Duration
-Estimated net duration.
+Estimated net duration in minutes.
 
 ## LATITUDE / LONGITUDE
 Location of repeater or central area for simplex nets in hours/minutes format.
