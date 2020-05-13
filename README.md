@@ -17,6 +17,11 @@ This script is based on the netsked concept from Bob Bruninga, WB4APR found here
 - http://www.aprs.org/info/netsked.txt
 - http://www.aprs.org/info/freqspec.txt
 
+# Requirements
+- python3-click
+- python3-tz
+- python3-tzlocal
+
 # Usage
 ```
 Usage: arNetSked.py [OPTIONS]
