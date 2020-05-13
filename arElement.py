@@ -17,13 +17,16 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
+import datetime as dt
+import pytz
+from tzlocal import get_localzone
 
 import threading
 
 class arElement():
     def __init__(self):
         self._arName = "%s" % (self.__class__.__name__)
-
+        self._arTz = get_localzone()
         self._arPrintLock = threading.Lock()
 
     @property
@@ -33,6 +36,20 @@ class arElement():
     @arName.setter
     def arName(self, v):
         self._arName = "%s:%s" % (self.__class__.__name__, v)
+
+    @property
+    def arTz(self):
+        return self._arTz
+
+    @arTz.setter
+    def arTz(self, v):
+        self._arTz = v
+
+    def arGetLocalTime(self):
+        return self._arTz.localize(dt.datetime.now())
+
+    def arGetUTCTime(self):
+        return pytz.utc.localize(dt.datetime.utcnow())
 
     def arPrint(self, message):
         self._arPrintLock.acquire()

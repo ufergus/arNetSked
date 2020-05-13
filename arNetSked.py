@@ -22,6 +22,7 @@ import os
 import sys
 import re
 import datetime as dt
+from pytz import timezone
 import click
 import math
 import threading
@@ -41,6 +42,8 @@ def td2min(td):
 
 class arNet(arElement, threading.Thread):
     def __init__(self, call, txCB):
+        arElement.__init__(self)
+
         self._day = 0              # sunday
 #        self._repeat = 7         # weekly
         self._timeofday = 20 * 60  # 8pm
@@ -55,7 +58,7 @@ class arNet(arElement, threading.Thread):
         self._lon = "00000.00W"    # longitude
         self._comment = ""         # comment
 
-        self._dt = dt.datetime.now()
+        self._dt = self.arGetLocalTime()
         self._stopped = threading.Event()
 
         self.opcall = call
@@ -69,7 +72,7 @@ class arNet(arElement, threading.Thread):
         self.objmode = 0
 
         threading.Thread.__init__(self)
-        arElement.__init__(self)
+
 
     @property
     def day(self):
@@ -289,7 +292,7 @@ class arNet(arElement, threading.Thread):
         self._dt = self._dt.replace(hour=hrs, minute=mins, second=0) + \
                     dt.timedelta(days=dayshift)
 
-        if td2min(self._dt - dt.datetime.now()) + self._duration < 0:
+        if td2min(self._dt - self.arGetLocalTime()) + self._duration < 0:
             self._dt += dt.timedelta(days = 7)
 
         self.arPrint("Time initialized, next NET starts at %s" % self._dt.strftime("%c"))
@@ -301,7 +304,7 @@ class arNet(arElement, threading.Thread):
         # for duration, beacon 3 times after to kill every 3 minutes
 
         # calc delta time in minutes, negative after net start
-        dMin = td2min(self._dt - dt.datetime.now())
+        dMin = td2min(self._dt - self.arGetLocalTime())
         self.arPrint("Minutes until NET start: %d" % dMin)
         retVal = 604800 # 1week
         if dMin > 30:
@@ -331,7 +334,7 @@ class arNet(arElement, threading.Thread):
             #update _dt for next net beacon time
             self.objmode = 0
             self._dt += dt.timedelta(days=7)
-            dMin = td2min(self._dt - dt.datetime.now())
+            dMin = td2min(self._dt - self.arGetLocalTime())
             retVal = (dMin - 30) * 60
 
         # safety net to not rapid fire network
@@ -352,7 +355,7 @@ class arNet(arElement, threading.Thread):
             self.txCB(self.buildPacket())
 
         while not self._stopped.wait(wt):
-            self.arPrint("Delay complete at %s" % dt.datetime.now())
+            self.arPrint("Delay complete at %s" % arGetLocalTime())
             wt = self.calcWaitTime()
             if not self._stopped.is_set() and self.objmode > 0:
                 self.txCB(self.buildPacket())
@@ -416,7 +419,7 @@ class arNet(arElement, threading.Thread):
         objs = 'E' if self.objmode < 3 else '.' # switch to X when killing object
         objstr = ";%s%c%s%s/%s%c" % \
                    (self._objname, objc, \
-                    dt.datetime.utcnow().strftime("%d%H%Mz"), \
+                    self.arGetUTCTime().strftime("%d%H%Mz"), \
                     self._latitude, \
                     self._longitude, \
                     objs )
@@ -446,16 +449,20 @@ class arNet(arElement, threading.Thread):
         return bstr+objstr.encode('UTF-8')
 
 class arNetSked(arElement):
-    def __init__(self, call, skedfile, host, port, verbose):
+    def __init__(self, call, skedfile, host, port, tz, verbose):
+        arElement.__init__(self)
+
         self._objlist = []
 
         self.call = call
         self.skedfile = skedfile
         self.tnchost = host
         self.tncport = port
+        if tz is not None:
+            self.arTz = tz
+
         self.verbose = verbose
 
-        arElement.__init__(self)
 
     def abortSignal(self, signum, frame):
         self.abort()
@@ -540,6 +547,7 @@ class arNetSked(arElement):
                     break
 
                 self._objlist.append(objn)
+                objn.arTz = self.arTz
                 objn.initTime()
                 objn.start()
 
@@ -595,13 +603,16 @@ class arNetSked(arElement):
 @click.option("--port", "-p", "port", default=8001,
     help="TNC network port or bluetooth channel",
     )
+@click.option("--timezone", "-t", "tz", required=False,
+    help="Timezone of schedule information",
+    )
 @click.option("--verbose", is_flag=True, help="Verbose output")
-def main(sfile, call, host, port, verbose):
+def main(sfile, call, host, port, tz, verbose):
     """Process schedule for APRS NetSked beacons and
     transmit over network TNC KISS server.
     """
 
-    netsked = arNetSked(call, sfile, host, port, verbose)
+    netsked = arNetSked(call, sfile, host, port, tz, verbose)
     signal.signal(signal.SIGINT, netsked.abortSignal)
 #    signal.signal(signal.SIGTERM, netsked.abort)
 

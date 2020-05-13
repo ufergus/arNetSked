@@ -52,11 +52,11 @@ ST_ESC = 3
 
 class arTNCKiss(arElement):
     def __init__(self, packet_cb):
+        arElement.__init__(self)
+
         self._packet_cb = packet_cb
         self._rx_state = ST_IDL
         self._rx_buf = bytearray(0)
-
-        arElement.__init__(self)
 
     # byte in, bytearray out
     def recvChar(self,c):
