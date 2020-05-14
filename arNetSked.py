@@ -459,7 +459,7 @@ class arNetSked(arElement):
         self.tnchost = host
         self.tncport = port
         if tz is not None:
-            self.arTz = tz
+            self.arTz = timezone(tz)
 
         self.verbose = verbose
 
