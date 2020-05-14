@@ -355,7 +355,7 @@ class arNet(arElement, threading.Thread):
             self.txCB(self.buildPacket())
 
         while not self._stopped.wait(wt):
-            self.arPrint("Delay complete at %s" % arGetLocalTime())
+            self.arPrint("Delay complete at %s" % self.arGetLocalTime())
             wt = self.calcWaitTime()
             if not self._stopped.is_set() and self.objmode > 0:
                 self.txCB(self.buildPacket())
