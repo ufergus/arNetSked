@@ -26,7 +26,8 @@ import threading
 class arElement():
     def __init__(self):
         self._arName = "%s" % (self.__class__.__name__)
-        self._arTz = get_localzone()
+        self._arLtz = get_localzone()
+        self._arTz = self._arLtz
         self._arPrintLock = threading.Lock()
 
     @property
@@ -46,12 +47,24 @@ class arElement():
         self._arTz = v
 
     def arGetLocalTime(self):
-        return self._arTz.localize(dt.datetime.now())
+        ldt = self._arLtz.localize(dt.datetime.now())
+        return ldt.astimezone(self._arTz)
 
     def arGetUTCTime(self):
-        return pytz.utc.localize(dt.datetime.utcnow())
+        ldt = self._arLtz.localize(dt.datetime.now())
+        return ldt.astimezone(pytz.utc)
 
     def arPrint(self, message):
         self._arPrintLock.acquire()
         print("[%s] %s" % (self._arName, message))
         self._arPrintLock.release()
+
+
+if __name__ == "__main__":
+    e = arElement()
+    print(e.arGetLocalTime().strftime("%c"))
+    print(e.arGetUTCTime().strftime("%c"))
+    e.arTz = pytz.timezone("US/Eastern")
+    print(e.arGetLocalTime().strftime("%c"))
+    print(e.arGetUTCTime().strftime("%c"))
+

@@ -41,7 +41,7 @@ def td2min(td):
     return round(res)
 
 class arNet(arElement, threading.Thread):
-    def __init__(self, call, txCB):
+    def __init__(self, call, txCB, tz = None):
         arElement.__init__(self)
 
         self._day = 0              # sunday
@@ -58,6 +58,8 @@ class arNet(arElement, threading.Thread):
         self._lon = "00000.00W"    # longitude
         self._comment = ""         # comment
 
+        if tz is not None:
+            self.arTz = tz
         self._dt = self.arGetLocalTime()
         self._stopped = threading.Event()
 
@@ -283,6 +285,7 @@ class arNet(arElement, threading.Thread):
         # initialize _dt to next future net time
         # unless net is currently active
 
+        self._dt = self.arGetLocalTime()
         dayshift = self._day - self._dt.weekday()
         if dayshift < 0:
             dayshift += 7
@@ -522,7 +525,7 @@ class arNetSked(arElement):
     #            print (line)
                 line = line.ljust(75)
 
-                objn = arNet(self.call, self.tranPacketCB)
+                objn = arNet(self.call, self.tranPacketCB, self.arTz)
                 opts = line.split()
                 try:
                     objn.day       = opts[0]
@@ -547,7 +550,6 @@ class arNetSked(arElement):
                     break
 
                 self._objlist.append(objn)
-                objn.arTz = self.arTz
                 objn.initTime()
                 objn.start()
 
